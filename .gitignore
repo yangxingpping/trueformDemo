@@ -45,6 +45,8 @@ Build/
 build-*/
 
 Project1/.vs/
+Project1/Project1/x64/Debug/
+Project1/Project1/x64/Release/
 
 # CMake generated files
 CMakeFiles/
