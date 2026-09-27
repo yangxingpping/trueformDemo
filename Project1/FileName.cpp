@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
         std::cout << "written: " << output_path << '\n';
 
         std::string path2{ "out2.stl" };
-        auto vv2 = cam_seq_cut2(base_buffer, tool_buffer, 0.03, 0, 9);
+        auto vv2 = cam_seq_cut2(base_buffer, tool_buffer, 0.05, 0, 9);
 		if (!tf::write_stl(vv2.polygons(), path2))
 		{
 			std::cerr << "error: failed to write output: " << path2 << '\n';
