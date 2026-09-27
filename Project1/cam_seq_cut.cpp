@@ -5,10 +5,13 @@
 #include <trueform/core.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -94,6 +97,17 @@ polygons_buffer_t cam_seq_cut(
     return current;
 }
 
+// cam_seq_cut2：高性能扫掠切削。
+//
+// 不再做 N 次链式布尔差集（每次都要对整个模型重建加速结构、重排布），
+// 而是使用 trueform 的 N-form CSG 模块：
+//   1. 把「模型（恒等变换）」和「沿 X 轴所有步进的刀具位姿」作为
+//      N+1 个 form，一次性投入 tf::make_csg_graph —— 全部几何体在
+//      单次 arrangement（全局拓扑）中完成求交与分类；
+//   2. 用布尔表达式 difference(0, any_of(1..N)) 一次性求值
+//      「模型 - 刀具扫掠体（所有刀具位姿的并集）」；
+//   3. tf::make_csg_mesh 直接从全局拓扑中抽取结果网格。
+// 模型只被切分一次，刀具位姿之间仅在真正重叠处求交，且全程由 TBB 并行。
 tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, float, 3, 3>& model, tf::polygons_buffer<int, float, 3, 3>& tool, float step,
 	float x_min,
 	float x_max)
@@ -102,6 +116,8 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 		throw std::runtime_error("model mesh is empty");
 	if (tool.faces().size() == 0)
 		throw std::runtime_error("tool mesh is empty");
+	if (!(step > 0.0f))
+		throw std::runtime_error("step must be positive");
 
 	// 若范围未指定，则自动根据包围盒计算，使 tool 沿 X 轴完整扫过 model
 	if (x_max <= x_min)
@@ -113,36 +129,53 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 		x_max = ma.x1 + tool_half_x;
 	}
 
+	// 用整数步进避免浮点累加漂移；tool 沿 X 轴正方向逐位姿平移
+	const int n_steps =
+	    static_cast<int>(std::floor((x_max - x_min) / step + 1e-6f)) + 1;
+
+	const auto t_start = std::chrono::steady_clock::now();
 	std::cout << "cam_seq_cut2: step=" << step
-	          << ", x_range=[" << x_min << ", " << x_max << "]\n";
+	          << ", x_range=[" << x_min << ", " << x_max << "], steps=" << n_steps << "\n";
 	std::cout << "  model: " << model.faces().size() << " faces\n";
 	std::cout << "  tool:  " << tool.faces().size() << " faces\n";
 
-	// 复制一份 model，避免破坏调用方传入的网格
-	polygons_buffer_t current = model;
-	int count = 0;
+	// ---- 1. 组装 forms：模型（恒等平移）+ 每个步进位姿的刀具 ----
+	// 恒等平移只是为了让模型与刀具的 tagged 视图类型一致，可放进同一容器
+	const auto id_tx = tf::make_transformation_from_translation(
+	    tf::vector<float, 3>{ 0.0f, 0.0f, 0.0f });
+	using form_t = decltype(model.polygons() | tf::tag(id_tx));
 
-	// tool 沿 X 轴正方向以 step 为步长平移，每步做布尔差集 current - tool_at_x
-	for (float x = x_min; x <= x_max; x += step)
+	std::vector<form_t> forms;
+	forms.reserve(static_cast<std::size_t>(n_steps) + 1);
+	forms.push_back(model.polygons() | tf::tag(id_tx));
+	for (int i = 0; i < n_steps; ++i)
 	{
-		auto tx = tf::make_transformation_from_translation(
-			tf::vector<float, 3>{ x, 0.0f, 0.0f });
-		auto tool_transformed = tool.polygons() | tf::tag(tx);
-
-		auto [next, labels, face_labels] = tf::make_boolean(
-			current.polygons(),
-			tool_transformed,
-			tf::boolean_op::left_difference);
-
-		current = std::move(next);
-		++count;
-
-		if (count % 10 == 0)
-			std::cout << "  step " << count << " (x=" << x << "): "
-			          << current.faces().size() << " faces\n";
+		float x = x_min + static_cast<float>(i) * step;
+		forms.push_back(tool.polygons() | tf::tag(
+		    tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.0f, 0.0f })));
 	}
+	const auto t_forms = std::chrono::steady_clock::now();
 
-	std::cout << "cam_seq_cut2 done. total steps=" << count
-	          << ", final faces=" << current.faces().size() << "\n";
-	return current;
+	// ---- 2. 一次性构建全局拓扑（arrangement + 分类）----
+	// make_csg_graph 内部会对容器再做一次 make_range，且策略按原模板
+	// 参数存储，因此这里必须传 tf::range 而不是 std::vector
+	auto graph = tf::make_csg_graph(tf::make_range(forms));
+	const auto t_graph = std::chrono::steady_clock::now();
+
+	// ---- 3. 求值 result = model - union(tool_1..tool_N)，一次抽取结果 ----
+	const int n_tools = static_cast<int>(forms.size()) - 1;
+	auto sweep = tf::csg::any_of(tf::make_sequence_range(1, n_tools + 1));
+	auto result = tf::make_csg_mesh(graph, tf::csg::difference(0, sweep));
+	const auto t_end = std::chrono::steady_clock::now();
+
+	auto ms = [](auto a, auto b)
+	{
+		return std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+	};
+	std::cout << "cam_seq_cut2 done. forms=" << forms.size()
+	          << " [forms " << ms(t_start, t_forms)
+	          << " ms, graph " << ms(t_forms, t_graph)
+	          << " ms, extract " << ms(t_graph, t_end) << " ms]"
+	          << ", final faces=" << result.faces().size() << "\n";
+	return result;
 }
