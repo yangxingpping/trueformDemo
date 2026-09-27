@@ -1,0 +1,25 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "c:\\users\\youngxp\\documents\\source\\vcpkg-2026.03.18\\installed\\x64-windows\\include\\trueform\\core\\iter\\dereference_policy.hpp",
+        "ProvidedModule": "",
+        "Includes": [
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\optional",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\yvals.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\yvals_core.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\vcruntime.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\sal.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\concurrencysal.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\vadefs.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\xkeycheck.h",
+            "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\ucrt\\crtdbg.h",
+            "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\ucrt\\corecrt.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\vcruntime_new_debug.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\vcruntime_new.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\crtdefs.h",
+            "c:\\program files\\microsoft visual studio\\18\\enterprise\\vc\\tools\\msvc\\14.44.35207\\include\\use_ansi.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}
