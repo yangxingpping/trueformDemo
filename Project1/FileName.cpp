@@ -9,6 +9,8 @@
 
 #include <trueform/trueform.hpp>
 
+#include "cam_seq_cut.hpp"
+
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -84,6 +86,7 @@ int main(int argc, char* argv[])
                   << result.points().size() << " points\n";
 
         // 3. 将结果写出为二进制 STL
+        
         if (!tf::write_stl(result.polygons(), output_path))
         {
             std::cerr << "error: failed to write output: " << output_path << '\n';
@@ -91,6 +94,16 @@ int main(int argc, char* argv[])
         }
 
         std::cout << "written: " << output_path << '\n';
+
+        std::string path2{ "out2.stl" };
+        auto vv2 = cam_seq_cut2(base_buffer, tool_buffer, 0.03, 0, 9);
+		if (!tf::write_stl(vv2.polygons(), path2))
+		{
+			std::cerr << "error: failed to write output: " << path2 << '\n';
+			return 1;
+		}
+
+		std::cout << "written: " << path2 << '\n';
     }
     catch (const std::exception& e)
     {
