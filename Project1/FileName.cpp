@@ -27,6 +27,14 @@ namespace
     }
 }
 
+tf::polygons_buffer<int, float, 3, 3> cam_seq_cut(tf::polygons_buffer<int, float, 3, 3>& model, tf::polygons_buffer<int, float, 3, 3>& tool)
+{
+    tf::polygons_buffer<int, float, 3, 3> ret;
+
+    return ret;
+}
+
+
 int main(int argc, char* argv[])
 {
     if (argc < 3)
