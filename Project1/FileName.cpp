@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
         auto [result, labels, face_labels] = tf::make_boolean(
             base_buffer.polygons(),
             tool_buffer.polygons(),
-            tf::boolean_op::left_difference);
+            tf::boolean_op::intersection);
 
         std::cout << "  result: " << result.faces().size() << " faces, "
                   << result.points().size() << " points\n";
