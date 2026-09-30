@@ -3,6 +3,7 @@
 #include <trueform/io.hpp>
 #include <trueform/csg.hpp>
 #include <trueform/core.hpp>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -146,45 +147,46 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 	using form_t = decltype(model.polygons() | tf::tag(id_tx));
 
 	std::vector<form_t> forms;
-	forms.reserve((static_cast<std::size_t>(n_steps) + 1)*3);
-	forms.push_back(model.polygons() | tf::tag(id_tx));
+	
 
     int count{ 100 };
 
+    tf::polygons_buffer<int, float, 3, 3> result;
+    tf::polygons_buffer<int, float, 3, 3> cursrc = model;
+
     for (int j = 0; j < count; ++j)
     {
+        forms.clear();
+		forms.reserve((static_cast<std::size_t>(n_steps) + 1) * 3);
+		forms.push_back(cursrc.polygons() | tf::tag(id_tx));
         for (int i = 0; i < n_steps; ++i)
         {
             float x = x_min + static_cast<float>(i) * step;
             forms.push_back(tool.polygons() | tf::tag(
                 tf::make_transformation_from_translation(tf::vector<float, 3>{ x, j*0.08f, 0.0f })));
         }
+		const auto t_forms = std::chrono::steady_clock::now();
+
+		// ---- 2. 一次性构建全局拓扑（arrangement + 分类）----
+		// make_csg_graph 内部会对容器再做一次 make_range，且策略按原模板
+		// 参数存储，因此这里必须传 tf::range 而不是 std::vector
+		auto graph = tf::make_csg_graph(tf::make_range(forms));
+		const auto t_graph = std::chrono::steady_clock::now();
+
+		// ---- 3. 求值 result = model - union(tool_1..tool_N)，一次抽取结果 ----
+		const int n_tools = static_cast<int>(forms.size()) - 1;
+		auto sweep = tf::csg::any_of(tf::make_sequence_range(1, n_tools + 1));
+		cursrc = tf::make_csg_mesh(graph, tf::csg::difference(0, sweep));
     }
+    result = cursrc;
 
 
-
-	const auto t_forms = std::chrono::steady_clock::now();
-
-	// ---- 2. 一次性构建全局拓扑（arrangement + 分类）----
-	// make_csg_graph 内部会对容器再做一次 make_range，且策略按原模板
-	// 参数存储，因此这里必须传 tf::range 而不是 std::vector
-	auto graph = tf::make_csg_graph(tf::make_range(forms));
-	const auto t_graph = std::chrono::steady_clock::now();
-
-	// ---- 3. 求值 result = model - union(tool_1..tool_N)，一次抽取结果 ----
-	const int n_tools = static_cast<int>(forms.size()) - 1;
-	auto sweep = tf::csg::any_of(tf::make_sequence_range(1, n_tools + 1));
-	auto result = tf::make_csg_mesh(graph, tf::csg::difference(0, sweep));
 	const auto t_end = std::chrono::steady_clock::now();
 
 	auto ms = [](auto a, auto b)
 	{
 		return std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
 	};
-	std::cout << "cam_seq_cut2 done. forms=" << forms.size()
-	          << " [forms " << ms(t_start, t_forms)
-	          << " ms, graph " << ms(t_forms, t_graph)
-	          << " ms, extract " << ms(t_graph, t_end) << " ms]"
-	          << ", final faces=" << result.faces().size() << "\n";
+    SPDLOG_INFO("total cost time={} ms", ms(t_start, t_end));
 	return result;
 }

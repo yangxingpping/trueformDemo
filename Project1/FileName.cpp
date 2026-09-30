@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 
         auto [result2, he] = tf::simplified(vv2.polygons(), config);
 
-		if (!tf::write_stl(result2.polygons(), path2))
+		if (!tf::write_stl(vv2.polygons(), path2))
 		{
 			std::cerr << "error: failed to write output: " << path2 << '\n';
 			return 1;
