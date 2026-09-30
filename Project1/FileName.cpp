@@ -96,7 +96,14 @@ int main(int argc, char* argv[])
         std::cout << "written: " << output_path << '\n';
 
         std::string path2{ "out2.stl" };
-        auto vv2 = cam_seq_cut2(base_buffer, tool_buffer, 0.05, 0, 9);
+        auto vv2 = cam_seq_cut2(base_buffer, tool_buffer, 0.06, 0, 9);
+
+		// 1. 精确清理（移除完全重复的元素）
+		auto clean_polygons = tf::cleaned(vv2.polygons(), 1e-6f);
+
+		// 2. 基于容差清理（合并距离小于 1e-6 的顶点）
+		//auto clean_polygons = tf::cleaned(polygons, 1e-6f);
+
 		if (!tf::write_stl(vv2.polygons(), path2))
 		{
 			std::cerr << "error: failed to write output: " << path2 << '\n';
