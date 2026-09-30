@@ -71,3 +71,5 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+Project1/Project1/out2.stl
+Project1/Project1/x64/Debug/vc143.idb

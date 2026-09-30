@@ -3,6 +3,9 @@
 #include <trueform/io.hpp>
 #include <trueform/csg.hpp>
 #include <trueform/core.hpp>
+#include <trueform/remesh.hpp>
+#include <trueform/clean.hpp>
+#include <trueform/topology.hpp>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -149,13 +152,18 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 	std::vector<form_t> forms;
 	
 
-    int count{ 100 };
+    int count{ 5 };
 
     tf::polygons_buffer<int, float, 3, 3> result;
     tf::polygons_buffer<int, float, 3, 3> cursrc = model;
 
     for (int j = 0; j < count; ++j)
     {
+        /*if (j == 5)
+        {
+            break;
+        }*/
+
         forms.clear();
 		forms.reserve((static_cast<std::size_t>(n_steps) + 1) * 3);
 		forms.push_back(cursrc.polygons() | tf::tag(id_tx));
@@ -177,6 +185,28 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 		const int n_tools = static_cast<int>(forms.size()) - 1;
 		auto sweep = tf::csg::any_of(tf::make_sequence_range(1, n_tools + 1));
 		cursrc = tf::make_csg_mesh(graph, tf::csg::difference(0, sweep));
+        tf::write_stl(cursrc.polygons(), fmt::format("{}_src.stl", j+10));
+        if (j % 2 == 0)
+        {
+			tf::simplify_config<float> config;
+			config.error_rel = 0.001f;            // 保守的误差预算
+			config.feature_angle = tf::deg(30.f); // 保留特征边
+			config.preserve_boundary = true;      // 保留边界
+            auto pt1c = cursrc.points().size();
+            auto f1c = cursrc.polygons().size();
+            
+			auto [result2, he] = tf::simplified(cursrc.polygons(), config);
+            
+            auto cleaned = tf::cleaned(result2.polygons(), 1e-6f);
+            auto oriented = tf::orient_faces_consistently(cleaned.polygons());
+            cursrc = cleaned;
+            auto pt2c = cursrc.points().size();
+            auto f2c = cursrc.polygons().size();
+            int qq{ 0 };
+        }
+
+        tf::write_stl(cursrc.polygons(), fmt::format("{}.stl", j+10));
+
     }
     result = cursrc;
 
