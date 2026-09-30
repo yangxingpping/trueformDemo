@@ -148,124 +148,20 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 	std::vector<form_t> forms;
 	forms.reserve((static_cast<std::size_t>(n_steps) + 1)*3);
 	forms.push_back(model.polygons() | tf::tag(id_tx));
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-		    tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.0f, 0.0f })));
-	}
 
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.08f, 0.0f })));
-	}
+    int count{ 100 };
 
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.16f, 0.0f })));
-	}
+    for (int j = 0; j < count; ++j)
+    {
+        for (int i = 0; i < n_steps; ++i)
+        {
+            float x = x_min + static_cast<float>(i) * step;
+            forms.push_back(tool.polygons() | tf::tag(
+                tf::make_transformation_from_translation(tf::vector<float, 3>{ x, j*0.08f, 0.0f })));
+        }
+    }
 
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.24f, 0.0f })));
-	}
 
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.32f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.40f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.48f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.56f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.64f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.72f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.8f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.88f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 0.96f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 1.04f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 1.12f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 1.2f, 0.0f })));
-	}
-
-	for (int i = 0; i < n_steps; ++i)
-	{
-		float x = x_min + static_cast<float>(i) * step;
-		forms.push_back(tool.polygons() | tf::tag(
-			tf::make_transformation_from_translation(tf::vector<float, 3>{ x, 4.8f, 0.0f })));
-	}
 
 	const auto t_forms = std::chrono::steady_clock::now();
 
