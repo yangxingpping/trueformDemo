@@ -51,8 +51,8 @@ polygons_buffer_t cam_seq_cut(
     float x_min,
     float x_max)
 {
-    auto shape = tf::read_stl(shape_path);
-    auto tool = tf::read_stl(tool_path);
+    auto shape = tf::read_stl<int64_t>(shape_path);
+    auto tool = tf::read_stl<int64_t>(tool_path);
 
     if (shape.faces().size() == 0)
         throw std::runtime_error("shape mesh is empty: " + shape_path);
@@ -77,23 +77,38 @@ polygons_buffer_t cam_seq_cut(
     polygons_buffer_t current = std::move(shape);
     int count = 0;
 
-    for (float x = x_min; x <= x_max; x += step)
+    for (int j = 0; j < 100; ++j)
     {
-        auto tx = tf::make_transformation_from_translation(
-            tf::vector<float, 3>{ x, 0.0f, 0.0f });
-        auto tool_transformed = tool.polygons() | tf::tag(tx);
+        const auto t_start = std::chrono::steady_clock::now();
+        for (float x = x_min; x <= x_max; x += step)
+        {
+            auto tx = tf::make_transformation_from_translation(
+                tf::vector<float, 3>{ x, 0.08*j, 0.0f });
+            auto tool_transformed = tool.polygons() | tf::tag(tx);
 
-        auto [next, labels, face_labels] = tf::make_boolean(
-            current.polygons(),
-            tool_transformed,
-            tf::boolean_op::left_difference);
+            auto [next, labels, face_labels] = tf::make_boolean(
+                current.polygons(),
+                tool_transformed,
+                tf::boolean_op::left_difference);
 
-        current = std::move(next);
-        ++count;
+            current = std::move(next);
+            ++count;
 
-        if (count % 10 == 0)
-            std::cout << "  step " << count << " (x=" << x << "): "
-                      << current.faces().size() << " faces\n";
+            if (count % 2 == 0) {
+                /*std::cout << "  step " << count << " (x=" << x << "): "
+                    << current.faces().size() << " faces\n";*/
+                
+				current = tf::cleaned(current.polygons());
+            }
+
+        }
+		const auto t_end = std::chrono::steady_clock::now();
+
+		auto ms = [](auto a, auto b)
+			{
+				return std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+			};
+		SPDLOG_INFO("total cost time={} ms", ms(t_start, t_end));
     }
 
     std::cout << "cam_seq_cut done. total steps=" << count
@@ -112,7 +127,7 @@ polygons_buffer_t cam_seq_cut(
 //      「模型 - 刀具扫掠体（所有刀具位姿的并集）」；
 //   3. tf::make_csg_mesh 直接从全局拓扑中抽取结果网格。
 // 模型只被切分一次，刀具位姿之间仅在真正重叠处求交，且全程由 TBB 并行。
-tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, float, 3, 3>& model, tf::polygons_buffer<int, float, 3, 3>& tool, float step,
+tf::polygons_buffer<int64_t, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int64_t, float, 3, 3>& model, tf::polygons_buffer<int64_t, float, 3, 3>& tool, float step,
 	float x_min,
 	float x_max)
 {
@@ -154,8 +169,8 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 
     int count{ 130 };
 
-    tf::polygons_buffer<int, float, 3, 3> result;
-    tf::polygons_buffer<int, float, 3, 3> cursrc = model;
+    tf::polygons_buffer<int64_t, float, 3, 3> result;
+    tf::polygons_buffer<int64_t, float, 3, 3> cursrc = model;
 
     for (int k = 0; k < 2; ++k)
     {

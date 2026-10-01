@@ -7,7 +7,10 @@
 //   polydera.trueform (header-only) + oneTBB，均通过 packages.config 中的
 //   NuGet 包引入，MSBuild 会自动配置头文件路径、链接库并拷贝 TBB 运行时 DLL。
 
-#include <trueform/trueform.hpp>
+#include <trueform/io.hpp>
+#include <trueform/remesh.hpp>
+#include <trueform/csg.hpp>
+#include <trueform/clean.hpp>
 
 #include "cam_seq_cut.hpp"
 
@@ -57,10 +60,10 @@ int main(int argc, char* argv[])
 
         // 1. 读取两个 STL（自动识别 ASCII / 二进制，加载时自动去重顶点）
         std::cout << "reading " << base_path << " ...\n";
-        auto base_buffer = tf::read_stl(base_path);
+        auto base_buffer = tf::read_stl<int64_t>(base_path);
 
         std::cout << "reading " << tool_path << " ...\n";
-        auto tool_buffer = tf::read_stl(tool_path);
+        auto tool_buffer = tf::read_stl<int64_t>(tool_path);
 
         if (base_buffer.faces().size() == 0 || tool_buffer.faces().size() == 0)
         {
@@ -96,7 +99,7 @@ int main(int argc, char* argv[])
         std::cout << "written: " << output_path << '\n';
 
         std::string path2{ "out2.stl" };
-        auto vv2 = cam_seq_cut2(base_buffer, tool_buffer, 0.06, 0, 9);
+        auto vv2 = cam_seq_cut("1.stl", "2.stl", 0.08, 0, 9);
 
 		// 1. 精确清理（移除完全重复的元素）
 		auto clean_polygons = tf::cleaned(vv2.polygons(), 1e-6f);
