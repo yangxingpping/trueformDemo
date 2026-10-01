@@ -152,62 +152,96 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
 	std::vector<form_t> forms;
 	
 
-    int count{ 5 };
+    int count{ 130 };
 
     tf::polygons_buffer<int, float, 3, 3> result;
     tf::polygons_buffer<int, float, 3, 3> cursrc = model;
 
-    for (int j = 0; j < count; ++j)
+    for (int k = 0; k < 2; ++k)
     {
-        /*if (j == 5)
+        for (int j = 0; j < count; ++j)
         {
-            break;
-        }*/
+            /*if (j == 5)
+            {
+                break;
+            }*/
 
-        forms.clear();
-		forms.reserve((static_cast<std::size_t>(n_steps) + 1) * 3);
-		forms.push_back(cursrc.polygons() | tf::tag(id_tx));
-        for (int i = 0; i < n_steps; ++i)
-        {
-            float x = x_min + static_cast<float>(i) * step;
-            forms.push_back(tool.polygons() | tf::tag(
-                tf::make_transformation_from_translation(tf::vector<float, 3>{ x, j*0.08f, 0.0f })));
+            forms.clear();
+            forms.reserve((static_cast<std::size_t>(n_steps) + 1) * 3);
+            forms.push_back(cursrc.polygons() | tf::tag(id_tx));
+            for (int i = 0; i < n_steps; ++i)
+            {
+                float x = x_min + static_cast<float>(i) * step;
+                forms.push_back(tool.polygons() | tf::tag(
+                    tf::make_transformation_from_translation(tf::vector<float, 3>{ x, j * 0.08f, (-0.08)*k })));
+            }
+            const auto t_forms = std::chrono::steady_clock::now();
+
+            // ---- 2. 一次性构建全局拓扑（arrangement + 分类）----
+            // make_csg_graph 内部会对容器再做一次 make_range，且策略按原模板
+            // 参数存储，因此这里必须传 tf::range 而不是 std::vector
+            auto graph = tf::make_csg_graph(tf::make_range(forms));
+            const auto t_graph = std::chrono::steady_clock::now();
+
+            // ---- 3. 求值 result = model - union(tool_1..tool_N)，一次抽取结果 ----
+            const int n_tools = static_cast<int>(forms.size()) - 1;
+            auto sweep = tf::csg::any_of(tf::make_sequence_range(1, n_tools + 1));
+            cursrc = tf::make_csg_mesh(graph, tf::csg::difference(0, sweep));
+            //tf::write_stl(cursrc.polygons(), fmt::format("{}_src.stl", j+10));
+            if (false)
+            {
+                //tf::simplify_config<float> config;
+                //config.error_rel = 0.001f;            // 保守的误差预算
+                //config.feature_angle = tf::deg(30.f); // 保留特征边
+                //config.preserve_boundary = true;      // 保留边界
+       //         
+       //         
+                //auto [result2, he] = tf::simplified(cursrc.polygons(), config);
+
+                //auto cleaned = tf::cleaned(result.polygons(), 1e-6f);
+                //auto oriented = tf::orient_faces_consistently(cleaned.polygons());
+                //auto [result2, he] = tf::isotropic_remeshed(cleaned.polygons(), 1.0 * tf::mean_edge_length(cleaned.polygons()));
+
+                // 带配置
+                //tf::isotropic_remesh_config<float> config;
+                //config.iterations = 5;
+                //config.relaxation_iters = 5;
+                //config.preserve_boundary = true;
+                //config.use_quadric = true;
+                //config.parallel = true;      // 默认并行
+
+                //auto [result, he] = tf::isotropic_remeshed(polys, target_length, config);
+
+                auto clean_polys = tf::cleaned(cursrc.polygons(), 1e-6f);
+                std::cout << "After clean: " << clean_polys.faces().size() << " faces\n";
+
+                // 3. 简化：使用误差预算，尽量保持精度
+                //    或者使用 tf::decimated(clean_polys, 0.1f) 按比例简化
+                tf::simplify_config<float> sim_config;
+                sim_config.error_rel = 0.005f;              // 保守的误差预算
+                sim_config.feature_angle = tf::deg(30.f);   // 保留特征边
+                sim_config.preserve_boundary = true;         // 保护边界
+                auto [simplified_polys, he] = tf::simplified(clean_polys.polygons(), sim_config);
+                std::cout << "After simplify: " << simplified_polys.faces().size() << " faces\n";
+
+                // 4. 重网格化：修复拓扑，使三角形均匀，为后续布尔运算做准备
+                float mel = tf::mean_edge_length(simplified_polys.polygons());
+                auto [remeshed_polys, he2] = tf::isotropic_remeshed(
+                    simplified_polys.polygons(),
+                    2.0f * mel
+                );
+
+                cursrc = remeshed_polys;
+                int qq{ 0 };
+            }
+
+            //tf::write_stl(cursrc.polygons(), fmt::format("{}.stl", j+10));
+
         }
-		const auto t_forms = std::chrono::steady_clock::now();
-
-		// ---- 2. 一次性构建全局拓扑（arrangement + 分类）----
-		// make_csg_graph 内部会对容器再做一次 make_range，且策略按原模板
-		// 参数存储，因此这里必须传 tf::range 而不是 std::vector
-		auto graph = tf::make_csg_graph(tf::make_range(forms));
-		const auto t_graph = std::chrono::steady_clock::now();
-
-		// ---- 3. 求值 result = model - union(tool_1..tool_N)，一次抽取结果 ----
-		const int n_tools = static_cast<int>(forms.size()) - 1;
-		auto sweep = tf::csg::any_of(tf::make_sequence_range(1, n_tools + 1));
-		cursrc = tf::make_csg_mesh(graph, tf::csg::difference(0, sweep));
-        tf::write_stl(cursrc.polygons(), fmt::format("{}_src.stl", j+10));
-        if (j % 2 == 0)
-        {
-			tf::simplify_config<float> config;
-			config.error_rel = 0.001f;            // 保守的误差预算
-			config.feature_angle = tf::deg(30.f); // 保留特征边
-			config.preserve_boundary = true;      // 保留边界
-            auto pt1c = cursrc.points().size();
-            auto f1c = cursrc.polygons().size();
-            
-			auto [result2, he] = tf::simplified(cursrc.polygons(), config);
-            
-            auto cleaned = tf::cleaned(result2.polygons(), 1e-6f);
-            auto oriented = tf::orient_faces_consistently(cleaned.polygons());
-            cursrc = cleaned;
-            auto pt2c = cursrc.points().size();
-            auto f2c = cursrc.polygons().size();
-            int qq{ 0 };
-        }
-
-        tf::write_stl(cursrc.polygons(), fmt::format("{}.stl", j+10));
-
     }
+
+
+	
     result = cursrc;
 
 

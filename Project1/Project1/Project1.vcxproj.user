@@ -6,8 +6,8 @@
     <LocalDebuggerCommandArgumentsHistory>1.stl 2.stl|</LocalDebuggerCommandArgumentsHistory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>1.stl 2.stl</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>11.stl 2.stl</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArgumentsHistory>1.stl 2.stl|</LocalDebuggerCommandArgumentsHistory>
+    <LocalDebuggerCommandArgumentsHistory>1.stl 2.stl|11.stl 2.stl|</LocalDebuggerCommandArgumentsHistory>
   </PropertyGroup>
 </Project>

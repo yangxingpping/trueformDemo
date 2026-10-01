@@ -102,14 +102,18 @@ int main(int argc, char* argv[])
 		auto clean_polygons = tf::cleaned(vv2.polygons(), 1e-6f);
 
 		// 2. 基于容差清理（合并距离小于 1e-6 的顶点）
-		//auto clean_polygons = tf::cleaned(polygons, 1e-6f);
+		//auto clean_polygons = tf::cleaned(vv2.polygons(), 1e-6f);
+
+		//auto [result3, he3] = tf::decimated(vv2.polygons(), 1e-6f);
 
 		tf::simplify_config<float> config;
-		config.error_rel = 0.005f;            // 保守的误差预算
+		config.error_rel = 0.002f;            // 保守的误差预算
 		config.feature_angle = tf::deg(30.f); // 保留特征边
 		config.preserve_boundary = true;      // 保留边界
 
         auto [result2, he] = tf::simplified(vv2.polygons(), config);
+
+
 
 		if (!tf::write_stl(vv2.polygons(), path2))
 		{
