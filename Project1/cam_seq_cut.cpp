@@ -77,7 +77,7 @@ polygons_buffer_t cam_seq_cut(
     polygons_buffer_t current = std::move(shape);
     int count = 0;
 
-    for (int j = 0; j < 100; ++j)
+    for (int j = 0; j < 120; ++j)
     {
         const auto t_start = std::chrono::steady_clock::now();
         for (float x = x_min; x <= x_max; x += step)
@@ -99,6 +99,8 @@ polygons_buffer_t cam_seq_cut(
                     << current.faces().size() << " faces\n";*/
                 
 				current = tf::cleaned(current.polygons());
+                auto [simplified_polys, he] = tf::simplified(current.polygons(), 1e-10f);
+				current = std::move(simplified_polys);
             }
 
         }
