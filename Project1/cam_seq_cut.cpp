@@ -161,10 +161,6 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
     {
         for (int j = 0; j < count; ++j)
         {
-            /*if (j == 5)
-            {
-                break;
-            }*/
 
             forms.clear();
             forms.reserve((static_cast<std::size_t>(n_steps) + 1) * 3);
@@ -187,56 +183,7 @@ tf::polygons_buffer<int, float, 3, 3> cam_seq_cut2(tf::polygons_buffer<int, floa
             const int n_tools = static_cast<int>(forms.size()) - 1;
             auto sweep = tf::csg::any_of(tf::make_sequence_range(1, n_tools + 1));
             cursrc = tf::make_csg_mesh(graph, tf::csg::difference(0, sweep));
-            //tf::write_stl(cursrc.polygons(), fmt::format("{}_src.stl", j+10));
-            if (false)
-            {
-                //tf::simplify_config<float> config;
-                //config.error_rel = 0.001f;            // 保守的误差预算
-                //config.feature_angle = tf::deg(30.f); // 保留特征边
-                //config.preserve_boundary = true;      // 保留边界
-       //         
-       //         
-                //auto [result2, he] = tf::simplified(cursrc.polygons(), config);
-
-                //auto cleaned = tf::cleaned(result.polygons(), 1e-6f);
-                //auto oriented = tf::orient_faces_consistently(cleaned.polygons());
-                //auto [result2, he] = tf::isotropic_remeshed(cleaned.polygons(), 1.0 * tf::mean_edge_length(cleaned.polygons()));
-
-                // 带配置
-                //tf::isotropic_remesh_config<float> config;
-                //config.iterations = 5;
-                //config.relaxation_iters = 5;
-                //config.preserve_boundary = true;
-                //config.use_quadric = true;
-                //config.parallel = true;      // 默认并行
-
-                //auto [result, he] = tf::isotropic_remeshed(polys, target_length, config);
-
-                auto clean_polys = tf::cleaned(cursrc.polygons(), 1e-6f);
-                std::cout << "After clean: " << clean_polys.faces().size() << " faces\n";
-
-                // 3. 简化：使用误差预算，尽量保持精度
-                //    或者使用 tf::decimated(clean_polys, 0.1f) 按比例简化
-                tf::simplify_config<float> sim_config;
-                sim_config.error_rel = 0.005f;              // 保守的误差预算
-                sim_config.feature_angle = tf::deg(30.f);   // 保留特征边
-                sim_config.preserve_boundary = true;         // 保护边界
-                auto [simplified_polys, he] = tf::simplified(clean_polys.polygons(), sim_config);
-                std::cout << "After simplify: " << simplified_polys.faces().size() << " faces\n";
-
-                // 4. 重网格化：修复拓扑，使三角形均匀，为后续布尔运算做准备
-                float mel = tf::mean_edge_length(simplified_polys.polygons());
-                auto [remeshed_polys, he2] = tf::isotropic_remeshed(
-                    simplified_polys.polygons(),
-                    2.0f * mel
-                );
-
-                cursrc = remeshed_polys;
-                int qq{ 0 };
-            }
-
-            //tf::write_stl(cursrc.polygons(), fmt::format("{}.stl", j+10));
-
+           
         }
     }
 
